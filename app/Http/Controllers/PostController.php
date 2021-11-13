@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Category;
+use App\Models\Post;
 
 class PostController extends Controller
 {
@@ -23,7 +25,7 @@ class PostController extends Controller
      */
     public function create()
     {
-        return view('create-post');
+        return view('create-post', ['categories' => Category::all()]);
     }
 
     /**
@@ -34,7 +36,15 @@ class PostController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $post = new Post;
+
+        $post->title       = $request->title;
+        $post->category_id = $request->category;
+        $post->text        = $request->text;
+        $post->slug = $this->transformToSlug($request->title);
+
+        $post->save();
+        return view('home');
     }
 
     /**
@@ -45,7 +55,8 @@ class PostController extends Controller
      */
     public function show($id)
     {       
-        return view('post');
+        $post = Post::find($id);
+        return view('post', ['post' => $post]);
     }
 
     /**
@@ -80,5 +91,19 @@ class PostController extends Controller
     public function destroy($id)
     {
         //
+    }
+
+    private function transformToSlug($string)
+    {
+        $string = (string) $string;
+        $string = strip_tags($string); // убираем HTML-теги
+        $string = str_replace(array("\n", "\r"), " ", $string); // убираем перевод каретки
+        $string = preg_replace("/\s+/", ' ', $string); // удаляем повторяющие пробелы
+        $string = trim($string); // убираем пробелы в начале и конце строки
+        $string = function_exists('mb_strtolower') ? mb_strtolower($string) : strtolower($sstring); // переводим строку в нижний регистр (иногда надо задать локаль)
+        $string = strtr($string, array('а'=>'a','б'=>'b','в'=>'v','г'=>'g','д'=>'d','е'=>'e','ё'=>'e','ж'=>'j','з'=>'z','и'=>'i','й'=>'y','к'=>'k','л'=>'l','м'=>'m','н'=>'n','о'=>'o','п'=>'p','р'=>'r','с'=>'s','т'=>'t','у'=>'u','ф'=>'f','х'=>'h','ц'=>'c','ч'=>'ch','ш'=>'sh','щ'=>'shch','ы'=>'y','э'=>'e','ю'=>'yu','я'=>'ya','ъ'=>'','ь'=>''));
+        $string = preg_replace("/[^0-9a-z-_ ]/i", "", $string); // очищаем строку от недопустимых символов
+        $string = str_replace(" ", "-", $string); // заменяем пробелы знаком минус
+        return $string; // возвращаем результат
     }
 }
